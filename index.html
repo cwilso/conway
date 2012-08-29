@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+<title>Conway's Game of Life</title>
+<link rel="stylesheet" href="style/main.css" type="text/css">
+</head>
+<body>
+<script src="js/jazz.js"></script>
+<script src="js/cell.js"></script>
+<button onclick="tick()">tick</button>
+<div id="universe">
+
+</div>
+	<p>
+		MIDI Input:
+		<select id=midiIn onchange='changeMidiIn();'>
+			<option value="">Not connected</option>
+		</select>
+		MIDI Output:
+		<select id=midiOut onchange='changeMidiOut();'>
+			<option value="">Not connected</option>
+		</select>
+	</p>
+</body>
+</html>
