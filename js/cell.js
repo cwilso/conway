@@ -7,6 +7,9 @@ var frame1 = null,
 var numRows = 8,
 	numCols = 8;
 
+window.addEventListener('keydown', function() { tick();
+} );
+
 window.addEventListener('load', function() {
 	theUniverse = document.getElementById("universe");
 	frame1 = new Array(numRows);
@@ -24,11 +27,12 @@ window.addEventListener('load', function() {
 	for (var i=0; i<numRows; i++) {
 		var rowElem = document.createElement("div");
 		rowElem.className = "row";
+		rowElem.row = i;
 		for (var j=0; j<numCols; j++) {
 			var cellElem = document.createElement("div");
 			cellElem.row = i;
 			cellElem.col = j;
-			cellElem.onclick = flip;
+			cellElem.onclick = flipHandler;
 			cellElem.className = "cell";
 			if (frame1[i][j])
 				cellElem.classList.add("live");
@@ -38,16 +42,41 @@ window.addEventListener('load', function() {
 	}
 	currentFrame = frame1;
 	backFrame = frame2;
+	drawFullBoardToMIDI();
 } );
 
-function flip(e) {
-	var elem = e.target;
+function flipHandler(e) {
+	flip( e.target );
+}
 
+function flip(elem) {
 	currentFrame[elem.row][elem.col] = !currentFrame[elem.row][elem.col];
 	if (elem.className == "cell")  // dead
 		elem.className = "cell live";
 	else
 		elem.className = "cell";
+	drawFullBoardToMIDI();
+}
+
+function findElemByXY( x, y ) {
+	var e, i, j, c;
+
+	for (i in theUniverse.children) {
+		e = theUniverse.children[i];
+		if (e.row == y) {
+			for (j in e.children) {
+				if (e.children[j].col == x)
+					return e.children[j];
+			}
+		}
+	}
+	return null;
+}
+
+function flipXY( x, y ) {
+	var elem = findElemByXY( x, y );
+	if (elem)
+		flip( elem );
 }
 
 function countLiveNeighbors(frame,x,y) {
@@ -62,6 +91,15 @@ function countLiveNeighbors(frame,x,y) {
 		}
 	}
 	return c;
+}
+
+function drawFullBoardToMIDI() {
+	for (var i=0; i<numRows; i++) {
+		for (var j=0; j<numCols; j++) {
+			var key = i*16 + j;
+			Jazz.MidiOut( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
+		}	
+	}
 }
 
 function tick() {
@@ -96,6 +134,7 @@ function tick() {
 			  	cellElem.className = "cell";
 		}
 	}
+	drawFullBoardToMIDI();
 }
 /*
 
