@@ -7,6 +7,10 @@ var frame1 = null,
 var numRows = 8,
 	numCols = 8;
 
+var midi = null;
+var midiOut = null;
+var midiIn = null;
+
 window.addEventListener('keydown', function() { tick();
 } );
 
@@ -42,8 +46,22 @@ window.addEventListener('load', function() {
 	}
 	currentFrame = frame1;
 	backFrame = frame2;
-	drawFullBoardToMIDI();
+	navigator.getMIDIAccess( gotMIDI, null );
 } );
+
+function gotMIDI( midiAccess ) {
+	midi = midiAccess;
+	var ins = midiAccess.enumerateInputs();
+	midiIn = midiAccess.getInput( ins[0] );
+	midiIn.onmessage = midiProc;
+
+	var outs = midiAccess.enumerateOutputs();
+	midiOut = midiAccess.getOutput( outs[0] );
+
+	midiOut.sendMessage( 0xB0,0x00,0x00 ); // Reset Launchpad
+	midiOut.sendMessage( 0xB0,0x00,0x01 ); // Select XY mode
+	drawFullBoardToMIDI();
+}
 
 function flipHandler(e) {
 	flip( e.target );
@@ -97,7 +115,7 @@ function drawFullBoardToMIDI() {
 	for (var i=0; i<numRows; i++) {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
-			Jazz.MidiOut( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
+			midiOut.sendMessage( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
 		}	
 	}
 }
@@ -136,6 +154,36 @@ function tick() {
 	}
 	drawFullBoardToMIDI();
 }
+
+function midiProc(messages) {
+  data = messages[0].data;
+  var cmd = data[0] >> 4;
+  var channel = data[0] & 0xf;
+  var noteNumber = data[1];
+  var velocity = data[2];
+
+  if ( cmd==8 || ((cmd==9)&&(velocity==0)) ) { // with MIDI, note on with velocity zero is the same as note off
+    // note off
+    //noteOff(b);
+  } else if (cmd == 9) {  // Note on
+    if ((noteNumber&0x0f)==8)
+      tick();
+    else {
+      var x = noteNumber & 0x0f;
+      var y = (noteNumber & 0xf0) >> 4;
+      flipXY( x, y );
+    }
+  } else if (cmd == 11) { // Continuous Controller message
+    switch (b) {
+    }
+  }
+}
+
+
+
+
+
+
 /*
 
 function updatePlatters( time ) {
