@@ -138,7 +138,8 @@ function flip(elem) {
 		elem.className = "cell live";
 	else
 		elem.className = "cell";
-	drawFullBoardToMIDI();
+	var key = elem.row*16 + elem.col;
+	midiOut.sendMessage( 0x90, key, elem.classList.contains("live") ? (elem.classList.contains("mature")?0x13:0x30) : 0x00);
 }
 
 function findElemByXY( x, y ) {
@@ -185,6 +186,16 @@ function drawFullBoardToMIDI() {
 	}
 }
 
+function updateMIDIFromLastFrame() {
+	for (var i=0; i<numRows; i++) {
+		for (var j=0; j<numCols; j++) {
+			var key = i*16 + j;
+			if (currentFrame[i][j] || backFrame[i][j])
+				midiOut.sendMessage( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
+		}	
+	}
+}
+
 function tick() {
 	var tempFrame = currentFrame;
 	var c;
@@ -217,7 +228,8 @@ function tick() {
 			  	cellElem.className = "cell";
 		}
 	}
-	drawFullBoardToMIDI();
+//	drawFullBoardToMIDI();
+	updateMIDIFromLastFrame();
 }
 
 function midiProc(messages) {
