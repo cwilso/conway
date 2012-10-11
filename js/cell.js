@@ -50,6 +50,7 @@ var selectMIDIOut = null;
 var midiAccess = null;
 var midiIn = null;
 var midiOut = null;
+var launchpadFound = false;
 
 function changeMIDIIn( ev ) {
   var list=midiAccess.enumerateInputs();
@@ -85,8 +86,10 @@ function onMIDIInit( midi ) {
   selectMIDIIn.options.length = 0;
 
   for (var i=0; i<list.length; i++)
-    if (list[i].name.toString().indexOf("Launchpad") != -1)
+    if (list[i].name.toString().indexOf("Launchpad") != -1) {
       preferredIndex = i;
+      launchpadFound = true;
+    }
 
   if (list.length) {
     for (var i=0; i<list.length; i++)
@@ -115,7 +118,7 @@ function onMIDIInit( midi ) {
     selectMIDIOut.onchange = changeMIDIOut;
   }
 
-  if (midiOut) {  
+  if (midiOut && launchpadFound) {  
 	midiOut.sendMessage( 0xB0,0x00,0x00 ); // Reset Launchpad
 	midiOut.sendMessage( 0xB0,0x00,0x01 ); // Select XY mode
 	drawFullBoardToMIDI();
