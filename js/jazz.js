@@ -19,169 +19,17 @@ function midiProc(t,a,b,c) {
     // note off
     //noteOff(b);
   } else if (cmd == 9) {  // Note on
-    switch (noteNumber) {
-      // General buttons
-      case 0x59:  // Back
-        break;
-      case 0x5a:  // Enter
-        break;
-
-      // Deck A buttons
-      case 0x33:  // Deck A cue
-        if (leftTrack.cuePoint) {
-          // jump to cuePoint
-          leftTrack.jumpToCuePoint();
-          // light up the play button
-          Jazz.MidiOut( (leftTrack.isPlaying) ? 0x90 : 0x80,0x3b,0x01);
-        } else {
-          leftTrack.setCuePointAtCurrentTime();
-          // light up the Deck A cue button
-          Jazz.MidiOut( 0x90, 0x33, 0x01 );
-        }
-        break;
-      case 0x3b:  // Deck A play/pause
-        leftTrack.togglePlayback();
-        Jazz.MidiOut( (leftTrack.isPlaying) ? 0x90 : 0x80,0x3b,0x01);
-        break;
-      case 0x40:  // Deck A sync
-        break;
-      case 0x65:  // Deck A PFL
-        break;
-      case 0x4b:  // Deck A load
-        break;
-      case 0x43:  // Deck A pitch bend +
-        break;
-      case 0x44:  // Deck A pitch bend -
-        leftTrack.clearCuePoint();
-        // un-light up the Deck A cue button
-        Jazz.MidiOut( 0x80, 0x33, 0x01 );
-        break;
-
-      // Deck B buttons
-      case 0x3c:  // Deck B cue
-        if (rightTrack.cuePoint) {
-          // jump to cuePoint
-          rightTrack.jumpToCuePoint();
-          Jazz.MidiOut( (rightTrack.isPlaying) ? 0x90 : 0x80,0x42,0x01);
-        } else {
-          rightTrack.setCuePointAtCurrentTime();
-          // light up the Deck B cue button
-          Jazz.MidiOut( 0x90, 0x3c, 0x01 );
-          rightTrack.cueButton.classList.add("active");
-        }
-        break;
-      case 0x42:  // Deck B play/pause
-        rightTrack.togglePlayback();
-        Jazz.MidiOut( (rightTrack.isPlaying) ? 0x90 : 0x80,0x42,0x01);
-        break;
-      case 0x47:  // Deck B sync
-        break;
-      case 0x66:  // Deck B PFL
-        break;
-      case 0x34:  // Deck B load
-        break;
-      case 0x45:  // Deck B pitch bend +
-        break;
-      case 0x46:  // Deck B pitch bend -
-        rightTrack.clearCuePoint();
-        // un-light up the Deck B cue button
-        Jazz.MidiOut( 0x80, 0x3c, 0x01 );
-        break;
+    if ((noteNumber&0x0f)==8)
+      tick();
+    else {
+      var x = noteNumber & 0x0f;
+      var y = (noteNumber & 0xf0) >> 4;
+      flipXY( x, y );
     }
   } else if (cmd == 11) { // Continuous Controller message
     switch (b) {
-      case 0x08: // Deck A volume
-        var val = c/64.0;
-        leftTrack.gainSlider.value = val;
-        leftTrack.changeGain( val );
-        break;
-
-      case 0x09: // Deck B volume
-        var val = c/64.0;
-        rightTrack.gainSlider.value = val;
-        rightTrack.changeGain( val );
-        break;
-
-      case 0x0a: // Crossfader
-        var val = c/127.0;
-        crossfade(val);
-        document.getElementById("xfader").value = val;
-        break;
-
-      case 0x0d: // Deck A Pitch:  range of 0.92 - 1.08 (+/- 8%)
-        leftTrack.pbrSlider.value = 0.92 + 0.16 * c / 127.0;
-        leftTrack.changePlaybackRate( leftTrack.pbrSlider.value );
-        break;
-
-      case 0x0e: // Deck B Pitch:  range of 0.92 - 1.08 (+/- 8%)
-        rightTrack.pbrSlider.value = 0.92 + 0.16 * c / 127.0;
-        rightTrack.changePlaybackRate( rightTrack.pbrSlider.value );
-        break;
-
-      case 0x17: // Master Gain
-        break;
-
-      case 0x1a: // Browse wheel
-        if (c>63) {
-          // wheel -1
-        } else {
-          // wheel +1
-        }
-        break;
-
-      case 0x19: // Deck A wheel (shuttle)
-        if (c>63) {
-          // wheel -1
-          leftTrack.skip(-1);
-        } else {
-          // wheel +1
-          leftTrack.skip(1);
-        }
-        break;
-
-      case 0x18: // Deck B wheel (shuttle)
-        if (c>63) {
-          // wheel -1
-          rightTrack.skip(-1);
-        } else {
-          // wheel +1
-          rightTrack.skip(1);
-        }
-        break;
-
     }
   }
-}
-
-function midiString(a,b,c){
- var cmd=Math.floor(a/16);
- var note=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'][b%12]+Math.floor(b/12);
- a=a.toString(16);
- b=(b<16?'0':'')+b.toString(16);
- c=(c<16?'0':'')+c.toString(16);
- var str=a+" "+b+" "+c+"    ";
- if(cmd==8){
-  str+="Note Off   "+note;
- }
- else if(cmd==9){
-  str+="Note On    "+note;
- }
- else if(cmd==10){
-  str+="Aftertouch "+note;
- }
- else if(cmd==11){
-  str+="Control    "+b;
- }
- else if(cmd==12){
-  str+="Program    "+b;
- }
- else if(cmd==13){
-  str+="Aftertouch";
- }
- else if(cmd==14){
-  str+="Pitch Wheel";
- }
- return str;
 }
 
 //// Listbox
@@ -230,9 +78,6 @@ function onBlurIE(){
  if(active_element!=document.activeElement){ active_element=document.activeElement; return;}
  disconnectMidiIn();
 }
-
-var dingbuffer = null;
-var revdingbuffer = null;
 
 //init: create plugin
 window.addEventListener('load', function() {
@@ -287,16 +132,14 @@ window.addEventListener('load', function() {
   }
   catch(err){}
 
-  // clear all the LEDs
-  Jazz.MidiOut( 0x80,0x3b,0x01 ); // Deck A play/pause
-  Jazz.MidiOut( 0x80,0x33,0x01 ); // Deck A cue
-  Jazz.MidiOut( 0x80,0x40,0x01 ); // Deck A sync
-  Jazz.MidiOut( 0x80,0x65,0x01 ); // Deck A PFL
-  Jazz.MidiOut( 0x80,0x42,0x01 ); // Deck B play/pause
-  Jazz.MidiOut( 0x80,0x3c,0x01 ); // Deck B cue
-  Jazz.MidiOut( 0x80,0x47,0x01 ); // Deck B sync
-  Jazz.MidiOut( 0x80,0x66,0x01 ); // Deck B PFL
-
   if(navigator.appName=='Microsoft Internet Explorer'){ document.onfocusin=onFocusIE; document.onfocusout=onBlurIE;}
   else{ window.onfocus=connectMidiIn; window.onblur=disconnectMidiIn;}
+
+  Jazz.MidiOut( 0xB0,0x00,0x00 ); // Reset Launchpad
+  Jazz.MidiOut( 0xB0,0x00,0x01 ); // Select XY mode
+//  Jazz.MidiOut( 0xB0,0x00,0x7f ); // Test
+
+
+
+
 });
