@@ -42,7 +42,7 @@ window.addEventListener('load', function() {
 	}
 	currentFrame = frame1;
 	backFrame = frame2;
-	navigator.getMIDIAccess( onMIDIInit, null );
+	navigator.requestMIDIAccess( onMIDIInit, null );
 } );
 
 var selectMIDIIn = null;
@@ -53,7 +53,7 @@ var midiOut = null;
 var launchpadFound = false;
 
 function changeMIDIIn( ev ) {
-  var list=midiAccess.enumerateInputs();
+  var list=midiAccess.getInputs();
   var selectedIndex = ev.target.selectedIndex;
 
   if (list.length >= selectedIndex) {
@@ -63,13 +63,13 @@ function changeMIDIIn( ev ) {
 }
 
 function changeMIDIOut( ev ) {
-  var list=midiAccess.enumerateOutputs();
+  var list=midiAccess.getOutputs();
   var selectedIndex = ev.target.selectedIndex;
 
   if (list.length >= selectedIndex) {
     midiOut = midiAccess.getOutput( list[selectedIndex] );
-	midiOut.sendMessage( 0xB0,0x00,0x00 ); // Reset Launchpad
-	midiOut.sendMessage( 0xB0,0x00,0x01 ); // Select XY mode
+	midiOut.send( [0xB0,0x00,0x00] ); // Reset Launchpad
+	midiOut.send( [0xB0,0x00,0x01] ); // Select XY mode
 	drawFullBoardToMIDI();
   }
 }
@@ -80,7 +80,7 @@ function onMIDIInit( midi ) {
   selectMIDIIn=document.getElementById("midiIn");
   selectMIDIOut=document.getElementById("midiOut");
 
-  var list=midiAccess.enumerateInputs();
+  var list=midiAccess.getInputs();
 
   // clear the MIDI input select
   selectMIDIIn.options.length = 0;
@@ -104,7 +104,7 @@ function onMIDIInit( midi ) {
   // clear the MIDI output select
   selectMIDIOut.options.length = 0;
   preferredIndex = 0;
-  list=midi.enumerateOutputs();
+  list=midi.getOutputs();
 
   for (var i=0; i<list.length; i++)
     if (list[i].name.toString().indexOf("Launchpad") != -1)
@@ -119,17 +119,11 @@ function onMIDIInit( midi ) {
   }
 
   if (midiOut && launchpadFound) {  
-	midiOut.sendMessage( 0xB0,0x00,0x00 ); // Reset Launchpad
-	midiOut.sendMessage( 0xB0,0x00,0x01 ); // Select XY mode
+	midiOut.send( [0xB0,0x00,0x00] ); // Reset Launchpad
+	midiOut.send( [0xB0,0x00,0x01] ); // Select XY mode
 	drawFullBoardToMIDI();
   }
 }
-
-
-
-
-
-
 
 function flipHandler(e) {
 	flip( e.target );
@@ -142,7 +136,7 @@ function flip(elem) {
 	else
 		elem.className = "cell";
 	var key = elem.row*16 + elem.col;
-	midiOut.sendMessage( 0x90, key, elem.classList.contains("live") ? (elem.classList.contains("mature")?0x13:0x30) : 0x00);
+	midiOut.send( [0x90, key, elem.classList.contains("live") ? (elem.classList.contains("mature")?0x13:0x30) : 0x00] );
 }
 
 function findElemByXY( x, y ) {
@@ -186,7 +180,7 @@ function drawFullBoardToMIDI() {
 	for (var i=0; i<numRows; i++) {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
-			midiOut.sendMessage( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
+			midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00] );
 		}	
 	}
 
@@ -198,7 +192,7 @@ function updateMIDIFromLastFrame() {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
 			if (currentFrame[i][j] || backFrame[i][j])
-				midiOut.sendMessage( 0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00);
+				midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00] );
 		}	
 	}
 }
@@ -235,12 +229,12 @@ function tick() {
 			  	cellElem.className = "cell";
 		}
 	}
-//	drawFullBoardToMIDI();
+
 	updateMIDIFromLastFrame();
 }
 
-function midiProc(messages) {
-  data = messages[0].data;
+function midiProc(ev) {
+  data = ev.data;
   var cmd = data[0] >> 4;
   var channel = data[0] & 0xf;
   var noteNumber = data[1];
@@ -262,25 +256,3 @@ function midiProc(messages) {
     }
   }
 }
-
-
-
-
-
-
-/*
-
-function updatePlatters( time ) {
-	if (!tracks)
-		tracks = document.getElementById( "trackContainer" );
-
-	var track;
-	var keepAnimating = false;
-
-	for (var i=0; i<tracks.children.length; i++)
-		keepAnimating |= tracks.children[i].track.updatePlatter();
-
-	if (keepAnimating)
-		rafID = window.webkitRequestAnimationFrame( updatePlatters );
-}
-*/
