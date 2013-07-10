@@ -58,7 +58,7 @@ function changeMIDIIn( ev ) {
 
   if (list.length >= selectedIndex) {
     midiIn = list[selectedIndex];
-    midiIn.onmessage = midiMessageReceived;
+    midiIn.onmidimessage = midiMessageReceived;
   }
 }
 
@@ -96,7 +96,7 @@ function onMIDIInit( midi ) {
       selectMIDIIn.options[i]=new Option(list[i].name,list[i].fingerprint,i==preferredIndex,i==preferredIndex);
 
     midiIn = list[preferredIndex];
-    midiIn.onmessage = midiProc;
+    midiIn.onmidimessage = midiProc;
 
     selectMIDIIn.onchange = changeMIDIIn;
   }
