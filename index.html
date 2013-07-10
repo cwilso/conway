@@ -5,12 +5,13 @@
 <link rel="stylesheet" href="style/main.css" type="text/css">
 </head>
 <body>
-<script src="lib/WebMIDIAPI.js"></script>
-<script src="js/cell.js"></script>
-<button onclick="tick()">tick</button>
-<div id="universe">
+	<!-- Set up Web MIDI polyfill -->
+    <script src='http://cwilso.github.com/WebMIDIAPIShim/WebMIDIAPI.js'></script>
+	<script src="js/cell.js"></script>
+	<button onclick="tick()">tick</button>
+	<div id="universe">
 
-</div>
+	</div>
 	<p>
 		MIDI Input:
 		<select id=midiIn onchange='changeMidiIn();'>
