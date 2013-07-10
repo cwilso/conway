@@ -239,8 +239,8 @@ function tick() {
 	updateMIDIFromLastFrame();
 }
 
-function midiProc(messages) {
-  data = messages[0].data;
+function midiProc(event) {
+  data = event.data;
   var cmd = data[0] >> 4;
   var channel = data[0] & 0xf;
   var noteNumber = data[1];
