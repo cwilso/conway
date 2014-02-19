@@ -42,7 +42,7 @@ window.addEventListener('load', function() {
 	}
 	currentFrame = frame1;
 	backFrame = frame2;
-	navigator.requestMIDIAccess().then( onMIDIInit );
+	navigator.requestMIDIAccess( {sysex: false}).then( onMIDIInit, onMIDIFail );
 } );
 
 var selectMIDIIn = null;
@@ -72,6 +72,10 @@ function changeMIDIOut( ev ) {
 	midiOut.send( [0xB0,0x00,0x01] ); // Select XY mode
 	drawFullBoardToMIDI();
   }
+}
+
+function onMIDIFail( err ) {
+	alert("MIDI initialization failed.");
 }
 
 function onMIDIInit( midi ) {
@@ -183,6 +187,8 @@ function countLiveNeighbors(frame,x,y) {
 function drawFullBoardToMIDI() {
 //	var t = window.performance.webkitNow();
 
+	if (!launchpadFound)
+		return;
 	for (var i=0; i<numRows; i++) {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
