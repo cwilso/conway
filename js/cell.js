@@ -53,24 +53,27 @@ var midiOut = null;
 var launchpadFound = false;
 
 function changeMIDIIn( ev ) {
-  var list=midiAccess.inputs();
-  var selectedIndex = ev.target.selectedIndex;
+  if (midiIn)
+    midiIn.onmidimessage = null;
+  var selectedID = selectMIDIIn[selectMIDIIn.selectedIndex].value;
 
-  if (list.length >= selectedIndex) {
-    midiIn = list[selectedIndex];
-    midiIn.onmidimessage = midiMessageReceived;
+  for (var input of midiAccess.inputs.values()) {
+    if (selectedID == input.id)
+      midiIn = input;
   }
+  midiIn.onmidimessage = midiProc;
 }
 
 function changeMIDIOut( ev ) {
-  var list=midiAccess.outputs();
-  var selectedIndex = ev.target.selectedIndex;
+  var selectedID = selectMIDIOut[selectMIDIOut.selectedIndex].value;
 
-  if (list.length >= selectedIndex) {
-    midiOut = list[selectedIndex];
-	midiOut.send( [0xB0,0x00,0x00] ); // Reset Launchpad
-	midiOut.send( [0xB0,0x00,0x01] ); // Select XY mode
-	drawFullBoardToMIDI();
+  for (var output of midiAccess.outputs.values()) {
+    if (selectedID == output.id) {
+      midiOut = output;
+	  midiOut.send( [0xB0,0x00,0x00] ); // Reset Launchpad
+	  midiOut.send( [0xB0,0x00,0x01] ); // Select XY mode
+	  drawFullBoardToMIDI();
+	}
   }
 }
 
@@ -79,48 +82,36 @@ function onMIDIFail( err ) {
 }
 
 function onMIDIInit( midi ) {
-  var preferredIndex = 0;
   midiAccess = midi;
   selectMIDIIn=document.getElementById("midiIn");
   selectMIDIOut=document.getElementById("midiOut");
 
-  var list=midiAccess.inputs();
-
   // clear the MIDI input select
   selectMIDIIn.options.length = 0;
 
-  for (var i=0; i<list.length; i++)
-    if (list[i].name.toString().indexOf("Launchpad") != -1) {
-      preferredIndex = i;
+  for (var input of midiAccess.inputs.values()) {
+    if (input.name.toString().indexOf("Launchpad") != -1) {
       launchpadFound = true;
+      selectMIDIIn.add(new Option(input.name,input.id,true,true));
+      midiIn=input;
+	  midiIn.onmidimessage = midiProc;
     }
-
-  if (list.length) {
-    for (var i=0; i<list.length; i++)
-      selectMIDIIn.options[i]=new Option(list[i].name,list[i].fingerprint,i==preferredIndex,i==preferredIndex);
-
-    midiIn = list[preferredIndex];
-    midiIn.onmidimessage = midiProc;
-
-    selectMIDIIn.onchange = changeMIDIIn;
+    else
+    	selectMIDIIn.add(new Option(input.name,input.id,false,false));
   }
+  selectMIDIIn.onchange = changeMIDIIn;
 
   // clear the MIDI output select
   selectMIDIOut.options.length = 0;
-  preferredIndex = 0;
-  list=midi.outputs();
-
-  for (var i=0; i<list.length; i++)
-    if (list[i].name.toString().indexOf("Launchpad") != -1)
-      preferredIndex = i;
-
-  if (list.length) {
-    for (var i=0; i<list.length; i++)
-      selectMIDIOut.options[i]=new Option(list[i].name,list[i].fingerprint,i==preferredIndex,i==preferredIndex);
-
-    midiOut = list[preferredIndex];
-    selectMIDIOut.onchange = changeMIDIOut;
+  for (var output of midiAccess.outputs.values()) {
+    if (output.name.toString().indexOf("Launchpad") != -1) {
+      selectMIDIOut.add(new Option(output.name,output.id,true,true));
+      midiOut=output;
+    }
+    else
+    	selectMIDIOut.add(new Option(output.name,output.id,false,false));
   }
+  selectMIDIOut.onchange = changeMIDIOut;
 
   if (midiOut && launchpadFound) {  
 	midiOut.send( [0xB0,0x00,0x00] ); // Reset Launchpad
@@ -264,7 +255,7 @@ function midiProc(event) {
       flipXY( x, y );
     }
   } else if (cmd == 11) { // Continuous Controller message
-    switch (b) {
+    switch (noteNumber) {
     }
   }
 }
