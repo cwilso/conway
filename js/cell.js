@@ -259,25 +259,3 @@ function midiProc(event) {
     }
   }
 }
-
-
-
-
-
-
-/*
-
-function updatePlatters( time ) {
-	if (!tracks)
-		tracks = document.getElementById( "trackContainer" );
-
-	var track;
-	var keepAnimating = false;
-
-	for (var i=0; i<tracks.children.length; i++)
-		keepAnimating |= tracks.children[i].track.updatePlatter();
-
-	if (keepAnimating)
-		rafID = window.webkitRequestAnimationFrame( updatePlatters );
-}
-*/
