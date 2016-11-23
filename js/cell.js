@@ -42,7 +42,7 @@ window.addEventListener('load', function() {
 	}
 	currentFrame = frame1;
 	backFrame = frame2;
-	navigator.requestMIDIAccess( {sysex: false}).then( onMIDIInit, onMIDIFail );
+	navigator.requestMIDIAccess({}).then( onMIDIInit, onMIDIFail );
 } );
 
 var selectMIDIIn = null;
@@ -90,7 +90,7 @@ function onMIDIInit( midi ) {
   selectMIDIIn.options.length = 0;
 
   for (var input of midiAccess.inputs.values()) {
-    if (input.name.toString().indexOf("Launchpad") != -1) {
+    if ((input.name.toString().indexOf("Launchpad") != -1)||(input.name.toString().indexOf("QUNEO") != -1)) {
       launchpadFound = true;
       selectMIDIIn.add(new Option(input.name,input.id,true,true));
       midiIn=input;
@@ -104,7 +104,7 @@ function onMIDIInit( midi ) {
   // clear the MIDI output select
   selectMIDIOut.options.length = 0;
   for (var output of midiAccess.outputs.values()) {
-    if (output.name.toString().indexOf("Launchpad") != -1) {
+    if ((output.name.toString().indexOf("Launchpad") != -1)||(output.name.toString().indexOf("QUNEO") != -1)) {
       selectMIDIOut.add(new Option(output.name,output.id,true,true));
       midiOut=output;
     }
@@ -183,19 +183,36 @@ function drawFullBoardToMIDI() {
 	for (var i=0; i<numRows; i++) {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
-			midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00]);
+			if (midiOut)
+				midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00]);
 		}	
 	}
 
 //	console.log( "draw took " + (window.performance.webkitNow() - t) + " ms.");
 }
 
+function drawFullBoardToQUNEO() {
+	if (!quneoFound)
+		return;
+	for (var i=0; i<numRows; i++) {
+		for (var j=0; j<numCols; j++) {
+			var key = i*32 + j*2;
+			if (midiOut)
+				midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00]);
+		}	
+	}
+
+//	console.log( "draw took " + (window.performance.webkitNow() - t) + " ms.");
+}
+
+
 function updateMIDIFromLastFrame() {
 	for (var i=0; i<numRows; i++) {
 		for (var j=0; j<numCols; j++) {
 			var key = i*16 + j;
 			if (currentFrame[i][j] || backFrame[i][j])
-				midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00]);
+				if (midiOut)
+					midiOut.send( [0x90, key, currentFrame[i][j] ? (findElemByXY(j,i).classList.contains("mature")?0x13:0x30) : 0x00]);
 		}	
 	}
 }
